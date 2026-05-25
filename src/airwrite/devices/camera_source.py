@@ -4,16 +4,12 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Iterator
 
-
-@dataclass(frozen=True)
-class FrameData:
-    shape: tuple[int, int, int]
-    fill_value: int = 0
+from numpy import ndarray
 
 
 @dataclass(frozen=True)
 class CameraFrame:
-    data: FrameData
+    data: ndarray
     index: int
 
 
@@ -24,4 +20,3 @@ class CameraSource(ABC):
 
     def close(self) -> None:
         """Release any backing resources when a real device exists."""
-

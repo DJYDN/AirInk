@@ -1,1 +1,1 @@
-# Runtime dependencies will be added with implementation tasks.
+numpy==2.4.6
