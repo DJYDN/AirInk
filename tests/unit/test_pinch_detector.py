@@ -41,6 +41,13 @@ def test_pinch_detector_uses_hysteresis_to_hold_state_until_release_threshold() 
     assert detector.update(released) is False
 
 
+def test_pinch_detector_treats_zero_thumb_index_distance_as_strong_pinch() -> None:
+    detector = PinchDetector(down_threshold=0.30, up_threshold=0.45, stable_frames=1)
+    exact_pinch = _make_landmarks(thumb_tip=(0.10, 0.10), index_tip=(0.10, 0.10))
+
+    assert detector.update(exact_pinch) is True
+
+
 def _make_landmarks(
     *,
     thumb_tip: tuple[float, float],

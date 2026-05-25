@@ -7,5 +7,11 @@ from airwrite.trajectory.stroke import StrokePoint
 
 @dataclass
 class PassthroughFilter:
-    def apply(self, point: StrokePoint) -> StrokePoint:
+    def update(self, point: StrokePoint) -> StrokePoint:
         return point
+
+    def reset(self) -> None:
+        return None
+
+    def apply(self, point: StrokePoint) -> StrokePoint:
+        return self.update(point)

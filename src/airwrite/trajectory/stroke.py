@@ -7,8 +7,10 @@ from dataclasses import dataclass, field
 class StrokePoint:
     x: float
     y: float
+    t: float
+    confidence: float
 
 
-@dataclass(frozen=True)
+@dataclass
 class Stroke:
     points: list[StrokePoint] = field(default_factory=list)

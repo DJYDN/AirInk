@@ -24,10 +24,9 @@ class PinchDetector:
             raise ValueError("down_threshold must be less than or equal to up_threshold")
 
     def update(self, landmarks: HandLandmarks) -> bool:
-        normalized_distance = _distance(landmarks.thumb_tip, landmarks.index_tip) / _distance(
-            landmarks.wrist,
-            landmarks.middle_mcp,
-        )
+        pinch_distance = _distance(landmarks.thumb_tip, landmarks.index_tip)
+        normalization_scale = _normalization_scale(landmarks.wrist, landmarks.middle_mcp)
+        normalized_distance = pinch_distance / normalization_scale
         next_state = self._next_state(normalized_distance)
 
         if next_state == self._is_pinching:
@@ -55,7 +54,11 @@ class PinchDetector:
 
 
 def _distance(first: object, second: object) -> float:
-    distance = hypot(first.x - second.x, first.y - second.y)
+    return hypot(first.x - second.x, first.y - second.y)
+
+
+def _normalization_scale(first: object, second: object) -> float:
+    distance = _distance(first, second)
     if distance == 0.0:
         raise ValueError("pinch normalization scale must be greater than zero")
     return distance
