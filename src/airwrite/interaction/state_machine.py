@@ -30,11 +30,14 @@ class DrawingStateMachine:
         if self.state is DrawingState.NO_HAND:
             return self.state
 
+        if self.state is not DrawingState.LOST:
+            self.state = DrawingState.LOST
+            self._lost_frames = 1
+            return self.state
+
         self._lost_frames += 1
         if self._lost_frames >= self.lost_frame_limit:
             self.state = DrawingState.NO_HAND
             self._lost_frames = 0
-        else:
-            self.state = DrawingState.LOST
 
         return self.state
