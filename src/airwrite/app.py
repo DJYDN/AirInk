@@ -27,6 +27,9 @@ class AirWriteApp:
         self._loop_timer = QTimer(self.window)
         self._loop_timer.setInterval(16)
         self._loop_timer.timeout.connect(self._process_frame)
+        self.window.undo_requested.connect(self.undo_last_stroke)
+        self.window.clear_requested.connect(self.clear_canvas)
+        self.window.export_requested.connect(lambda: self.export_png())
 
     @classmethod
     def create(cls) -> "AirWriteApp":
@@ -56,7 +59,6 @@ class AirWriteApp:
             settings_manager=settings_manager,
             owns_qt_app=owns_qt_app,
         )
-        app._wire_controls()
         if not test_mode:
             app.start_realtime_loop()
         return app
@@ -85,20 +87,14 @@ class AirWriteApp:
             self.window.status_bar_widget.set_status("Undid last point")
         return point
 
-    def export_png(self, filename: str | bool = "snapshot.png") -> Path:
-        target_filename = filename if isinstance(filename, str) else "snapshot.png"
+    def export_png(self, filename: str = "snapshot.png") -> Path:
         export_path = export_widget_to_png(
             self.window.canvas,
             self.paths.data_dir,
-            target_filename,
+            filename,
         )
         self.window.status_bar_widget.set_status(f"Exported PNG to {export_path.name}")
         return export_path
-
-    def _wire_controls(self) -> None:
-        self.window.undo_button.clicked.connect(self.undo_last_stroke)
-        self.window.clear_button.clicked.connect(self.clear_canvas)
-        self.window.export_button.clicked.connect(self.export_png)
 
     def run(self) -> int:
         self.window.show()

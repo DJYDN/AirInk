@@ -1,3 +1,5 @@
+from pytestqt.qtbot import QtBot
+
 from airwrite.ui.main_window import MainWindow
 
 
@@ -21,3 +23,19 @@ def test_main_window_can_be_created_and_shown(qtbot):
         type(window.status_bar_widget),
         window.status_bar_widget.objectName(),
     ) is window.status_bar_widget
+
+
+def test_main_window_buttons_emit_semantic_intent_signals(qtbot: QtBot):
+    window = MainWindow()
+
+    qtbot.addWidget(window)
+    window.show()
+
+    with qtbot.waitSignal(window.undo_requested, timeout=1000):
+        window.undo_button.click()
+
+    with qtbot.waitSignal(window.clear_requested, timeout=1000):
+        window.clear_button.click()
+
+    with qtbot.waitSignal(window.export_requested, timeout=1000):
+        window.export_button.click()

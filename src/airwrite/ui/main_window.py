@@ -1,3 +1,4 @@
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QMainWindow,
@@ -13,6 +14,10 @@ from airwrite.ui.status_bar import StatusBarWidget
 
 
 class MainWindow(QMainWindow):
+    undo_requested = Signal()
+    clear_requested = Signal()
+    export_requested = Signal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("main_window")
@@ -26,6 +31,9 @@ class MainWindow(QMainWindow):
         self.undo_button = QPushButton("Undo")
         self.clear_button = QPushButton("Clear")
         self.export_button = QPushButton("Export PNG")
+        self.undo_button.clicked.connect(self.undo_requested.emit)
+        self.clear_button.clicked.connect(self.clear_requested.emit)
+        self.export_button.clicked.connect(self.export_requested.emit)
 
         central = QWidget(self)
         self.setCentralWidget(central)

@@ -29,12 +29,12 @@ def test_control_surface_wires_undo_clear_and_export_actions(qtbot):
     app.process_mock_point(12, 34)
     app.process_mock_point(56, 78)
 
-    window.undo_button.click()
+    window.undo_requested.emit()
     assert window.canvas.points == [(12, 34)]
 
-    window.clear_button.click()
+    window.clear_requested.emit()
     assert window.canvas.points == []
 
-    window.export_button.click()
+    window.export_requested.emit()
     assert export_path == Path(app.paths.data_dir) / "snapshot.png"
     assert export_path.exists()
