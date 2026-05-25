@@ -2,7 +2,7 @@ from airwrite.config.defaults import DEFAULT_SETTINGS_PAYLOAD
 from airwrite.config.paths import AppPaths
 
 
-def test_test_env_writes_stay_inside_project(tmp_path, monkeypatch):
+def test_test_env_honors_explicit_directory_overrides(tmp_path, monkeypatch):
     monkeypatch.setenv("AIRWRITE_ENV", "test")
     monkeypatch.setenv("AIRWRITE_CONFIG_DIR", str(tmp_path / "config"))
     monkeypatch.setenv("AIRWRITE_DATA_DIR", str(tmp_path / "data"))
@@ -39,6 +39,21 @@ def test_dev_env_uses_data_dev_root_by_default(tmp_path, monkeypatch):
 
     assert paths.environment == "dev"
     assert paths.root_dir == tmp_path / "data" / "dev"
+    assert paths.config_dir == paths.root_dir / "config"
+    assert paths.data_dir == paths.root_dir / "data"
+    assert paths.log_dir == paths.root_dir / "logs"
+
+
+def test_named_non_test_env_uses_matching_data_root(tmp_path, monkeypatch):
+    monkeypatch.setenv("AIRWRITE_ENV", "staging")
+    monkeypatch.delenv("AIRWRITE_CONFIG_DIR", raising=False)
+    monkeypatch.delenv("AIRWRITE_DATA_DIR", raising=False)
+    monkeypatch.delenv("AIRWRITE_LOG_DIR", raising=False)
+
+    paths = AppPaths.from_env(project_root=tmp_path)
+
+    assert paths.environment == "staging"
+    assert paths.root_dir == tmp_path / "data" / "staging"
     assert paths.config_dir == paths.root_dir / "config"
     assert paths.data_dir == paths.root_dir / "data"
     assert paths.log_dir == paths.root_dir / "logs"

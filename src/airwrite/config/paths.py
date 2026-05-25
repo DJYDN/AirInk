@@ -16,11 +16,10 @@ class AppPaths:
 
     @classmethod
     def from_env(cls, project_root: Path) -> "AppPaths":
-        environment = os.getenv("AIRWRITE_ENV", "dev")
-        default_root = (
-            project_root / "tests" / "output"
-            if environment == "test"
-            else project_root / "data" / "dev"
+        environment = (os.getenv("AIRWRITE_ENV", "dev") or "dev").strip() or "dev"
+        default_root = cls._default_root_for_environment(
+            project_root=project_root,
+            environment=environment,
         )
 
         return cls(
@@ -31,3 +30,10 @@ class AppPaths:
             data_dir=Path(os.getenv("AIRWRITE_DATA_DIR", default_root / "data")),
             log_dir=Path(os.getenv("AIRWRITE_LOG_DIR", default_root / "logs")),
         )
+
+    @staticmethod
+    def _default_root_for_environment(project_root: Path, environment: str) -> Path:
+        if environment == "test":
+            return project_root / "tests" / "output"
+
+        return project_root / "data" / environment
