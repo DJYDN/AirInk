@@ -1,3 +1,4 @@
+from airwrite.config.defaults import DEFAULT_SETTINGS_PAYLOAD
 from airwrite.config.paths import AppPaths
 
 
@@ -12,3 +13,65 @@ def test_test_env_writes_stay_inside_project(tmp_path, monkeypatch):
     assert paths.config_dir == tmp_path / "config"
     assert paths.data_dir == tmp_path / "data"
     assert paths.log_dir == tmp_path / "logs"
+
+
+def test_test_env_uses_output_root_by_default(tmp_path, monkeypatch):
+    monkeypatch.setenv("AIRWRITE_ENV", "test")
+    monkeypatch.delenv("AIRWRITE_CONFIG_DIR", raising=False)
+    monkeypatch.delenv("AIRWRITE_DATA_DIR", raising=False)
+    monkeypatch.delenv("AIRWRITE_LOG_DIR", raising=False)
+
+    paths = AppPaths.from_env(project_root=tmp_path)
+
+    assert paths.root_dir == tmp_path / "tests" / "output"
+    assert paths.config_dir == paths.root_dir / "config"
+    assert paths.data_dir == paths.root_dir / "data"
+    assert paths.log_dir == paths.root_dir / "logs"
+
+
+def test_dev_env_uses_data_dev_root_by_default(tmp_path, monkeypatch):
+    monkeypatch.delenv("AIRWRITE_ENV", raising=False)
+    monkeypatch.delenv("AIRWRITE_CONFIG_DIR", raising=False)
+    monkeypatch.delenv("AIRWRITE_DATA_DIR", raising=False)
+    monkeypatch.delenv("AIRWRITE_LOG_DIR", raising=False)
+
+    paths = AppPaths.from_env(project_root=tmp_path)
+
+    assert paths.environment == "dev"
+    assert paths.root_dir == tmp_path / "data" / "dev"
+    assert paths.config_dir == paths.root_dir / "config"
+    assert paths.data_dir == paths.root_dir / "data"
+    assert paths.log_dir == paths.root_dir / "logs"
+
+
+def test_default_settings_payload_matches_task_2_contract():
+    assert DEFAULT_SETTINGS_PAYLOAD == {
+        "camera": {
+            "index": 0,
+            "width": 1280,
+            "height": 720,
+            "fps": 30,
+            "mirror": True,
+        },
+        "canvas": {
+            "width": 1280,
+            "height": 720,
+            "background_color": "#FFFFFF",
+        },
+        "pen": {
+            "color": "#000000",
+            "width": 4,
+            "opacity": 1.0,
+        },
+        "tracking": {
+            "min_detection_confidence": 0.5,
+            "pinch_down_threshold": 0.28,
+            "pinch_up_threshold": 0.34,
+            "stable_frames": 3,
+            "lost_frame_limit": 8,
+        },
+        "filter": {
+            "type": "one_euro",
+            "strength": 0.5,
+        },
+    }
