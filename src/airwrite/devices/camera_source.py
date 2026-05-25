@@ -7,7 +7,7 @@ from typing import Iterator
 from numpy import ndarray
 
 
-@dataclass(frozen=True)
+@dataclass
 class CameraFrame:
     data: ndarray
     index: int
