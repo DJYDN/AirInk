@@ -18,10 +18,10 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("AirWrite")
         self.resize(1200, 720)
 
-        self.canvas = CanvasWidget(self)
-        self.camera_preview = CameraPreviewWidget(self)
-        self.settings_panel = SettingsPanel(self)
-        self.status_bar_widget = StatusBarWidget(self)
+        self.canvas = CanvasWidget()
+        self.camera_preview = CameraPreviewWidget()
+        self.settings_panel = SettingsPanel()
+        self.status_bar_widget = StatusBarWidget()
 
         central = QWidget(self)
         self.setCentralWidget(central)
