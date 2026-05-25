@@ -3,7 +3,8 @@ import os
 
 
 def pytest_sessionstart(session):
-    output_root = Path("tests/output")
+    project_root = Path(__file__).resolve().parent.parent
+    output_root = project_root / "tests" / "output"
     (output_root / "config").mkdir(parents=True, exist_ok=True)
     (output_root / "data").mkdir(parents=True, exist_ok=True)
     (output_root / "logs").mkdir(parents=True, exist_ok=True)
