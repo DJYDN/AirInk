@@ -57,3 +57,32 @@ pub struct AirInkFrame {
     pub gesture: AirInkGesture,
     pub quality: AirInkQuality,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StrokePoint {
+    pub x: f32,
+    pub y: f32,
+    pub t: u64,
+    pub confidence: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Stroke {
+    pub id: String,
+    pub points: Vec<StrokePoint>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StrokeUpdateEvent {
+    pub session_id: Option<String>,
+    pub active_stroke: Option<Stroke>,
+    pub committed_strokes: Vec<Stroke>,
+    pub stroke_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionStatusEvent {
+    pub status: String,
+    pub session_id: Option<String>,
+    pub stroke_count: usize,
+}
