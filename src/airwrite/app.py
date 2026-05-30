@@ -290,12 +290,7 @@ class AirWriteApp:
         self._previous_frame_at = frame_completed_at
 
         self.window.status_bar_widget.set_status(
-            (
-                f"Camera {self.settings.camera.index} live | State: {gesture_state.value}"
-                f" | Ratio: {pose.extension_ratio:.2f}/{self.settings.tracking.extended_ratio_threshold:.2f}"
-                if pose is not None
-                else f"Camera {self.settings.camera.index} live | State: {gesture_state.value} | Ratio: --"
-            )
+            self._format_status_message(gesture_state=gesture_state, pose=pose)
         )
         self.window.status_bar_widget.set_metrics(
             drawing_active=gesture_state is GestureState.DRAWING,
@@ -437,6 +432,9 @@ class AirWriteApp:
             fist_ratio_threshold=self.settings.tracking.fist_ratio_threshold,
             extended_ratio_threshold=self.settings.tracking.extended_ratio_threshold,
             hand_loss_grace_frames=self.settings.tracking.lost_frame_limit,
+            pinch_down_threshold=self.settings.tracking.pinch_down_threshold,
+            pinch_up_threshold=self.settings.tracking.pinch_up_threshold,
+            pen_up_stable_frames=max(self.settings.tracking.gesture_stable_frames, 4),
         )
         self._pose_smoother = PenPoseSmoother(alpha=self.settings.tracking.landmark_smoothing)
         self._session_controller = SessionController(
@@ -543,6 +541,17 @@ class AirWriteApp:
     def _resolve_drawing_position(self, pose: PenPose) -> tuple[float, float]:
         return (pose.tip.x, pose.tip.y)
 
+    def _format_status_message(self, *, gesture_state: GestureState, pose: PenPose | None) -> str:
+        if pose is None:
+            return f"Camera {self.settings.camera.index} live | State: {gesture_state.value} | Pinch: -- | Ext: --"
+        pinch_text = "--" if pose.pinch_ratio is None else f"{pose.pinch_ratio:.2f}"
+        return (
+            f"Camera {self.settings.camera.index} live | State: {gesture_state.value}"
+            f" | Pinch: {pinch_text}"
+            f" (down<={self.settings.tracking.pinch_down_threshold:.2f}, up>={self.settings.tracking.pinch_up_threshold:.2f})"
+            f" | Ext: {pose.extension_ratio:.2f}/{self.settings.tracking.extended_ratio_threshold:.2f}"
+        )
+
     def _build_skeleton_frame(
         self,
         frame_data: np.ndarray,
@@ -579,6 +588,28 @@ class AirWriteApp:
                     (0, 255, 0),
                     -1,
                 )
+
+            cv2.line(
+                skeleton_frame,
+                (int(landmarks.thumb_tip.x * width), int(landmarks.thumb_tip.y * height)),
+                (int(landmarks.index_tip.x * width), int(landmarks.index_tip.y * height)),
+                (255, 0, 255),
+                2,
+            )
+            cv2.circle(
+                skeleton_frame,
+                (int(landmarks.thumb_tip.x * width), int(landmarks.thumb_tip.y * height)),
+                5,
+                (255, 0, 255),
+                -1,
+            )
+            cv2.circle(
+                skeleton_frame,
+                (int(landmarks.index_tip.x * width), int(landmarks.index_tip.y * height)),
+                5,
+                (0, 255, 255),
+                -1,
+            )
 
             if landmarks.all_points:
                 connections = (
@@ -629,13 +660,24 @@ class AirWriteApp:
             cv2.LINE_AA,
         )
         if pose is not None:
+            pinch_text = "--" if pose.pinch_ratio is None else f"{pose.pinch_ratio:.2f}"
             cv2.putText(
                 skeleton_frame,
                 (
-                    f"Ratio {pose.extension_ratio:.2f} | Up>= {self.settings.tracking.extended_ratio_threshold:.2f}"
-                    f" | Start>= {self.settings.filter.start_threshold:.1f}"
+                    f"Pinch {pinch_text} | Down<= {self.settings.tracking.pinch_down_threshold:.2f}"
+                    f" | Up>= {self.settings.tracking.pinch_up_threshold:.2f}"
                 ),
                 (12, 52),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.55,
+                (255, 255, 255),
+                2,
+                cv2.LINE_AA,
+            )
+            cv2.putText(
+                skeleton_frame,
+                f"Ext {pose.extension_ratio:.2f} | Up>= {self.settings.tracking.extended_ratio_threshold:.2f}",
+                (12, 76),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.55,
                 (255, 255, 255),
