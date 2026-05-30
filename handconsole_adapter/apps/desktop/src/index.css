@@ -1,0 +1,136 @@
+:root {
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #e5edf7;
+  background: #0b1020;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 1024px;
+  min-height: 720px;
+  background: #0b1020;
+}
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.nav-rail {
+  width: 168px;
+  padding: 16px 10px;
+  background: #11182b;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nav-brand {
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin-bottom: 16px;
+  color: #7cc4ff;
+}
+
+.nav-item {
+  color: #9fb0c3;
+  text-decoration: none;
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.nav-item.active,
+.nav-item:hover {
+  color: #ffffff;
+  background: rgba(124, 196, 255, 0.16);
+}
+
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.content-area {
+  flex: 1;
+  padding: 20px;
+  overflow: auto;
+}
+
+.status-bar {
+  height: 34px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  color: #9fb0c3;
+  background: #11182b;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+}
+
+.page h1 {
+  margin-top: 0;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.card,
+.panel {
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-label {
+  color: #9fb0c3;
+  font-size: 13px;
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 320px;
+  gap: 16px;
+  min-height: 560px;
+}
+
+.placeholder-box,
+.canvas-placeholder {
+  min-height: 420px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  color: #9fb0c3;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 8px 12px;
+}
+
+dt {
+  color: #9fb0c3;
+}
+
+dd {
+  margin: 0;
+}
