@@ -1,11 +1,13 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod frame;
+mod sidecar;
 
 use frame::{
     AirInkCameraInfo, AirInkCameraStatus, AirInkFrame, AirInkGesture, AirInkQuality,
-    AirInkTracking, Point2D,
+    AirInkTracking, Point2D, SessionStatusEvent,
 };
+use sidecar::PythonSidecarBridge;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::LazyLock;
 use tauri::{AppHandle, Emitter};
@@ -48,6 +50,16 @@ fn airink_start_mock_stream(app_handle: AppHandle) -> Result<(), String> {
     app_handle
         .emit("airink/camera_status", running_camera_status())
         .map_err(|e| e.to_string())?;
+    app_handle
+        .emit(
+            "airink/session_status",
+            SessionStatusEvent {
+                status: "recording".to_string(),
+                session_id: Some("mock_session".to_string()),
+                stroke_count: 0,
+            },
+        )
+        .map_err(|e| e.to_string())?;
 
     tokio::spawn(async move {
         while MOCK_RUNNING.load(Ordering::SeqCst) {
@@ -59,6 +71,16 @@ fn airink_start_mock_stream(app_handle: AppHandle) -> Result<(), String> {
         }
 
         app_handle.emit("airink/camera_status", idle_camera_status()).ok();
+        app_handle
+            .emit(
+                "airink/session_status",
+                SessionStatusEvent {
+                    status: "idle".to_string(),
+                    session_id: None,
+                    stroke_count: 0,
+                },
+            )
+            .ok();
     });
 
     Ok(())
@@ -69,7 +91,26 @@ fn airink_stop_mock_stream(app_handle: AppHandle) -> Result<(), String> {
     MOCK_RUNNING.store(false, Ordering::SeqCst);
     app_handle
         .emit("airink/camera_status", idle_camera_status())
+        .map_err(|e| e.to_string())?;
+    app_handle
+        .emit(
+            "airink/session_status",
+            SessionStatusEvent {
+                status: "idle".to_string(),
+                session_id: None,
+                stroke_count: 0,
+            },
+        )
         .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn airink_describe_sidecar(executable: Option<String>, args: Option<Vec<String>>) -> String {
+    let bridge = PythonSidecarBridge::new(
+        executable.unwrap_or_else(|| "python".to_string()),
+        args.unwrap_or_else(|| vec!["-m".to_string(), "airink_sidecar".to_string()]),
+    );
+    bridge.describe()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -80,6 +121,7 @@ pub fn run() {
             airink_emit_mock_frame,
             airink_start_mock_stream,
             airink_stop_mock_stream,
+            airink_describe_sidecar,
         ])
         .run(tauri::generate_context!())
         .expect("error while running AirInk adapter application");
