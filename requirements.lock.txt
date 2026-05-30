@@ -1,6 +1,4 @@
 absl-py==2.4.0
-# Editable Git install with no remote (airwrite==0.1.0)
--e d:\luckystar\desktop\mydata\study\vstudio\airink
 altgraph==0.17.5
 certifi==2026.5.20
 cffi==2.0.0
