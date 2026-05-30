@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { listen } from "@tauri-apps/api/event";
 import { useAirInkStore, type CameraStatus } from "../../stores/airinkStore";
+import type { SessionStatusEvent, StrokeUpdateEvent } from "../../types/events";
 import type { AirInkFrame } from "../../types/frame";
 
 const navItems = [
@@ -16,6 +17,7 @@ const navItems = [
 export default function AppLayout() {
   const frame = useAirInkStore((state) => state.latestFrame);
   const status = useAirInkStore((state) => state.cameraStatus.status);
+  const sessionStatus = useAirInkStore((state) => state.sessionStatus.status);
 
   useEffect(() => {
     const unlistenCamera = listen<CameraStatus>("airink/camera_status", (event) => {
@@ -26,9 +28,19 @@ export default function AppLayout() {
       useAirInkStore.getState().addFrame(event.payload);
     });
 
+    const unlistenStroke = listen<StrokeUpdateEvent>("airink/stroke_update", (event) => {
+      useAirInkStore.getState().applyStrokeUpdate(event.payload);
+    });
+
+    const unlistenSession = listen<SessionStatusEvent>("airink/session_status", (event) => {
+      useAirInkStore.getState().setSessionStatus(event.payload);
+    });
+
     return () => {
       unlistenCamera.then((dispose) => dispose());
       unlistenFrame.then((dispose) => dispose());
+      unlistenStroke.then((dispose) => dispose());
+      unlistenSession.then((dispose) => dispose());
     };
   }, []);
 
@@ -52,6 +64,7 @@ export default function AppLayout() {
         </section>
         <footer className="status-bar">
           <span>Camera: {status}</span>
+          <span>Session: {sessionStatus}</span>
           <span>Gesture: {frame?.gesture.state ?? "--"}</span>
           <span>Pinch: {frame?.tracking.pinch_ratio?.toFixed(2) ?? "--"}</span>
           <span>FPS: {frame?.camera.fps?.toFixed(1) ?? "--"}</span>
