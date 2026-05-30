@@ -49,11 +49,9 @@ class GestureClassifier:
 
         posture = self._classify_posture(self._coerce_pose(landmarks_or_pose).extension_ratio)
         if posture == "transition":
-            return (
-                GestureState.ARMING_UP
-                if self._stable_posture == "extended"
-                else GestureState.ARMING_DOWN
-            )
+            self._pending_posture = None
+            self._pending_frames = 0
+            return self._state_for_posture(self._stable_posture)
 
         if posture == self._stable_posture:
             self._pending_posture = None
