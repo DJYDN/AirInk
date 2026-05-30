@@ -18,7 +18,6 @@ use tauri::{AppHandle, Emitter};
 use tokio::time::{sleep, Duration};
 
 static MOCK_RUNNING: AtomicBool = AtomicBool::new(false);
-static SIDECAR_RUNNING: AtomicBool = AtomicBool::new(false);
 static MOCK_FRAME_ID: AtomicU64 = AtomicU64::new(0);
 static ACTIVE_MOCK_SESSION: OnceLock<Mutex<Option<String>>> = OnceLock::new();
 
@@ -28,20 +27,13 @@ fn active_mock_session() -> &'static Mutex<Option<String>> {
 
 #[tauri::command]
 fn airink_get_camera_status() -> AirInkCameraStatus {
+    let active = MOCK_RUNNING.load(Ordering::SeqCst) || sidecar::is_running();
     AirInkCameraStatus {
-        status: if MOCK_RUNNING.load(Ordering::SeqCst) || SIDECAR_RUNNING.load(Ordering::SeqCst) {
-            "running".to_string()
-        } else {
-            "idle".to_string()
-        },
+        status: if active { "running".to_string() } else { "idle".to_string() },
         camera_index: 0,
         width: 1280,
         height: 720,
-        fps: if MOCK_RUNNING.load(Ordering::SeqCst) || SIDECAR_RUNNING.load(Ordering::SeqCst) {
-            30.0
-        } else {
-            0.0
-        },
+        fps: if active { 30.0 } else { 0.0 },
         error_message: None,
     }
 }
@@ -139,21 +131,15 @@ fn airink_stop_mock_stream(app_handle: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn airink_start_sidecar(
+async fn airink_start_sidecar(
     app_handle: AppHandle,
     executable: Option<String>,
     args: Option<Vec<String>>,
 ) -> Result<String, String> {
-    if SIDECAR_RUNNING.swap(true, Ordering::SeqCst) {
-        return Ok("sidecar already marked running".to_string());
-    }
+    let executable = executable.unwrap_or_else(|| "python".to_string());
+    let args = args.unwrap_or_else(|| vec!["-m".to_string(), "airink_sidecar".to_string()]);
 
-    let bridge = PythonSidecarBridge::new(
-        executable.unwrap_or_else(|| "python".to_string()),
-        args.unwrap_or_else(|| vec!["-m".to_string(), "airink_sidecar".to_string()]),
-    );
-    let description = bridge.describe();
-
+    let message = sidecar::start_sidecar(app_handle.clone(), executable, args).await?;
     app_handle
         .emit("airink/camera_status", running_camera_status())
         .map_err(|e| e.to_string())?;
@@ -162,18 +148,17 @@ fn airink_start_sidecar(
             "airink/session_status",
             SessionStatusEvent {
                 status: "recording".to_string(),
-                session_id: Some("sidecar_pending".to_string()),
+                session_id: Some("sidecar_session".to_string()),
                 stroke_count: 0,
             },
         )
         .map_err(|e| e.to_string())?;
-
-    Ok(format!("sidecar scaffold started: {}", description))
+    Ok(message)
 }
 
 #[tauri::command]
-fn airink_stop_sidecar(app_handle: AppHandle) -> Result<(), String> {
-    SIDECAR_RUNNING.store(false, Ordering::SeqCst);
+async fn airink_stop_sidecar(app_handle: AppHandle) -> Result<(), String> {
+    sidecar::stop_sidecar().await?;
     app_handle
         .emit("airink/camera_status", idle_camera_status())
         .map_err(|e| e.to_string())?;
