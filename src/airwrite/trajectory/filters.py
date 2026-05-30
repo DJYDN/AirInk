@@ -42,35 +42,18 @@ class DeadzoneFilter:
 
     def update(self, point: StrokePoint) -> StrokePoint | None:
         if self._last_emitted is None:
-            if self.start_threshold <= 0.0:
-                self._last_emitted = point
-                return point
-
-            if self._seed_point is None:
-                self._seed_point = point
-                return None
-
-            seed_distance = hypot(point.x - self._seed_point.x, point.y - self._seed_point.y)
-            if seed_distance < self.start_threshold:
-                return None
-
-            self._seed_point = None
-            self._last_emitted = point
-            return point
+            return self._initialize(point)
 
         distance = hypot(point.x - self._last_emitted.x, point.y - self._last_emitted.y)
         if self.max_jump_distance is not None and distance > self.max_jump_distance:
             return None
-        if distance < self.deadzone:
-            return None
 
-        alpha = 1.0 - self.smoothing
-        filtered_point = StrokePoint(
-            x=self._last_emitted.x + (point.x - self._last_emitted.x) * alpha,
-            y=self._last_emitted.y + (point.y - self._last_emitted.y) * alpha,
-            t=point.t,
-            confidence=point.confidence,
-        )
+        if distance < self.deadzone:
+            filtered_point = self._blend_toward(point, alpha=self._micro_motion_alpha())
+            self._last_emitted = filtered_point
+            return filtered_point
+
+        filtered_point = self._blend_toward(point, alpha=self._motion_alpha(distance))
         self._last_emitted = filtered_point
         return filtered_point
 
@@ -91,3 +74,41 @@ class DeadzoneFilter:
 
     def apply(self, point: StrokePoint) -> StrokePoint | None:
         return self.update(point)
+
+    def _initialize(self, point: StrokePoint) -> StrokePoint | None:
+        if self.start_threshold <= 0.0:
+            self._last_emitted = point
+            return point
+
+        if self._seed_point is None:
+            self._seed_point = point
+            return None
+
+        seed_distance = hypot(point.x - self._seed_point.x, point.y - self._seed_point.y)
+        if seed_distance < self.start_threshold:
+            return None
+
+        self._seed_point = None
+        self._last_emitted = point
+        return point
+
+    def _micro_motion_alpha(self) -> float:
+        return max(0.02, min(0.20, 1.0 - self.smoothing))
+
+    def _motion_alpha(self, distance: float) -> float:
+        base_alpha = 1.0 - self.smoothing
+        if self.deadzone <= 0.0:
+            return max(0.05, min(1.0, base_alpha))
+
+        speed_boost = min(1.0, distance / (self.deadzone * 12.0))
+        adaptive_alpha = base_alpha + (1.0 - base_alpha) * speed_boost
+        return max(0.05, min(1.0, adaptive_alpha))
+
+    def _blend_toward(self, point: StrokePoint, *, alpha: float) -> StrokePoint:
+        assert self._last_emitted is not None
+        return StrokePoint(
+            x=self._last_emitted.x + (point.x - self._last_emitted.x) * alpha,
+            y=self._last_emitted.y + (point.y - self._last_emitted.y) * alpha,
+            t=point.t,
+            confidence=point.confidence,
+        )
