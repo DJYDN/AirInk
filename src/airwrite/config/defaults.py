@@ -34,7 +34,7 @@ DEFAULT_SETTINGS_PAYLOAD = {
         "session_idle_timeout_ms": 1500,
     },
     "filter": {
-        "type": "one_euro",
+        "type": "deadzone",
         "strength": 0.5,
         "deadzone": 4.0,
         "start_threshold": 4.0,
