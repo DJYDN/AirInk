@@ -1,5 +1,6 @@
 import WritingCanvas from "../components/canvas/WritingCanvas";
 import MockStreamControls from "../components/tracking/MockStreamControls";
+import SkeletonOverlay from "../components/tracking/SkeletonOverlay";
 import { useAirInkStore } from "../stores/airinkStore";
 
 export default function AirWriting() {
@@ -7,6 +8,7 @@ export default function AirWriting() {
   const committedStrokes = useAirInkStore((state) => state.committedStrokes);
   const activeStroke = useAirInkStore((state) => state.activeStroke);
   const frameCount = useAirInkStore((state) => state.frameCount);
+  const sessionStatus = useAirInkStore((state) => state.sessionStatus);
 
   return (
     <div className="page writing-page">
@@ -21,9 +23,7 @@ export default function AirWriting() {
       <div className="workspace-grid">
         <section className="panel preview-panel">
           <h2>Camera / Skeleton Preview</h2>
-          <div className="placeholder-box">
-            {latestFrame?.tracking.hand_detected ? "Mock hand detected" : "Waiting for frames"}
-          </div>
+          <SkeletonOverlay frame={latestFrame} />
         </section>
         <section className="panel canvas-panel">
           <h2>Writing Canvas</h2>
@@ -34,6 +34,8 @@ export default function AirWriting() {
           <dl>
             <dt>Frames</dt>
             <dd>{frameCount}</dd>
+            <dt>Session</dt>
+            <dd>{sessionStatus.status}</dd>
             <dt>Gesture</dt>
             <dd>{latestFrame?.gesture.state ?? "--"}</dd>
             <dt>Drawing active</dt>
