@@ -18,6 +18,7 @@ class PenPose:
     source: str
     extension_ratio: float
     confidence: float
+    pinch_ratio: float | None = None
 
 
 @dataclass
@@ -42,6 +43,7 @@ class PenPoseSmoother:
             extension_ratio=(self.alpha * pose.extension_ratio)
             + ((1.0 - self.alpha) * previous.extension_ratio),
             confidence=pose.confidence,
+            pinch_ratio=_smooth_optional_number(previous.pinch_ratio, pose.pinch_ratio, alpha=self.alpha),
         )
         self._previous_pose = smoothed
         return smoothed
@@ -60,6 +62,7 @@ def derive_pen_pose(landmarks: HandLandmarks) -> PenPose:
         source=source,
         extension_ratio=extension_ratio,
         confidence=landmarks.confidence,
+        pinch_ratio=_resolve_pinch_ratio(landmarks),
     )
 
 
@@ -103,6 +106,13 @@ def _resolve_extension_ratio(landmarks: HandLandmarks) -> float:
     ) / hand_scale
 
 
+def _resolve_pinch_ratio(landmarks: HandLandmarks) -> float | None:
+    hand_scale = _distance(landmarks.wrist, landmarks.middle_mcp)
+    if hand_scale <= 0.0:
+        return None
+    return _distance(landmarks.thumb_tip, landmarks.index_tip) / hand_scale
+
+
 def _distance(start: Point2D, end: Point2D) -> float:
     return hypot(end.x - start.x, end.y - start.y)
 
@@ -112,3 +122,9 @@ def _smooth_point(previous: Point2D, current: Point2D, *, alpha: float) -> Point
         x=(alpha * current.x) + ((1.0 - alpha) * previous.x),
         y=(alpha * current.y) + ((1.0 - alpha) * previous.y),
     )
+
+
+def _smooth_optional_number(previous: float | None, current: float | None, *, alpha: float) -> float | None:
+    if previous is None or current is None:
+        return current
+    return (alpha * current) + ((1.0 - alpha) * previous)
