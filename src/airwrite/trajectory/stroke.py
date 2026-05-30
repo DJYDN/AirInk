@@ -14,3 +14,6 @@ class StrokePoint:
 @dataclass
 class Stroke:
     points: list[StrokePoint] = field(default_factory=list)
+
+    def add_point(self, point: StrokePoint) -> None:
+        self.points.append(point)

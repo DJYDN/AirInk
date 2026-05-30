@@ -7,8 +7,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from airwrite.config.settings import AppSettings
 from airwrite.ui.camera_preview import CameraPreviewWidget
 from airwrite.ui.canvas_widget import CanvasWidget
+from airwrite.ui.ocr_panel import OcrPanel
 from airwrite.ui.settings_panel import SettingsPanel
 from airwrite.ui.status_bar import StatusBarWidget
 
@@ -25,7 +27,9 @@ class MainWindow(QMainWindow):
         self.resize(1200, 720)
 
         self.canvas = CanvasWidget()
-        self.camera_preview = CameraPreviewWidget()
+        self.camera_preview = CameraPreviewWidget("Camera")
+        self.skeleton_preview = CameraPreviewWidget("Skeleton")
+        self.ocr_panel = OcrPanel()
         self.settings_panel = SettingsPanel()
         self.status_bar_widget = StatusBarWidget()
         self.undo_button = QPushButton("Undo")
@@ -41,14 +45,19 @@ class MainWindow(QMainWindow):
         root_layout = QHBoxLayout(central)
 
         content_layout = QVBoxLayout()
+        preview_layout = QHBoxLayout()
         controls_layout = QHBoxLayout()
         controls_layout.addWidget(self.undo_button)
         controls_layout.addWidget(self.clear_button)
         controls_layout.addWidget(self.export_button)
         controls_layout.addStretch(1)
 
+        preview_layout.addWidget(self.camera_preview, 1)
+        preview_layout.addWidget(self.skeleton_preview, 1)
+        preview_layout.addWidget(self.ocr_panel, 1)
+
         content_layout.addLayout(controls_layout)
-        content_layout.addWidget(self.camera_preview)
+        content_layout.addLayout(preview_layout)
         content_layout.addWidget(self.canvas, 1)
 
         root_layout.addLayout(content_layout, 1)
@@ -56,3 +65,6 @@ class MainWindow(QMainWindow):
 
         status_bar = self.statusBar()
         status_bar.addPermanentWidget(self.status_bar_widget, 1)
+
+    def load_settings(self, settings: AppSettings) -> None:
+        self.settings_panel.load_settings(settings)

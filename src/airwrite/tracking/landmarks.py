@@ -24,9 +24,22 @@ class HandLandmarks:
     wrist: Point2D
     middle_mcp: Point2D
     confidence: float
+    all_points: tuple[Point2D, ...] = ()
+    raw_index_tip: Point2D | None = None
+    raw_thumb_tip: Point2D | None = None
+    raw_wrist: Point2D | None = None
+    raw_middle_mcp: Point2D | None = None
 
     def __post_init__(self) -> None:
         _require_confidence_in_range(self.confidence)
+        if self.raw_index_tip is None:
+            object.__setattr__(self, "raw_index_tip", self.index_tip)
+        if self.raw_thumb_tip is None:
+            object.__setattr__(self, "raw_thumb_tip", self.thumb_tip)
+        if self.raw_wrist is None:
+            object.__setattr__(self, "raw_wrist", self.wrist)
+        if self.raw_middle_mcp is None:
+            object.__setattr__(self, "raw_middle_mcp", self.middle_mcp)
 
 
 @dataclass(frozen=True)

@@ -52,15 +52,33 @@ class PenSettings:
 @dataclass
 class TrackingSettings:
     min_detection_confidence: float
+    min_tracking_confidence: float
+    landmark_smoothing: float
     pinch_down_threshold: float
     pinch_up_threshold: float
     stable_frames: int
     lost_frame_limit: int
+    gesture_stable_frames: int
+    fist_ratio_threshold: float
+    extended_ratio_threshold: float
+    session_idle_timeout_ms: int
 
     def __post_init__(self) -> None:
         _require_number_in_range(
             "tracking.min_detection_confidence",
             self.min_detection_confidence,
+            minimum=0.0,
+            maximum=1.0,
+        )
+        _require_number_in_range(
+            "tracking.min_tracking_confidence",
+            self.min_tracking_confidence,
+            minimum=0.0,
+            maximum=1.0,
+        )
+        _require_number_in_range(
+            "tracking.landmark_smoothing",
+            self.landmark_smoothing,
             minimum=0.0,
             maximum=1.0,
         )
@@ -78,16 +96,43 @@ class TrackingSettings:
         )
         _require_positive_int("tracking.stable_frames", self.stable_frames)
         _require_positive_int("tracking.lost_frame_limit", self.lost_frame_limit)
+        _require_positive_int("tracking.gesture_stable_frames", self.gesture_stable_frames)
+        _require_number_in_range(
+            "tracking.fist_ratio_threshold",
+            self.fist_ratio_threshold,
+            minimum=0.0,
+            maximum=10.0,
+        )
+        _require_number_in_range(
+            "tracking.extended_ratio_threshold",
+            self.extended_ratio_threshold,
+            minimum=0.0,
+            maximum=10.0,
+        )
+        if self.fist_ratio_threshold > self.extended_ratio_threshold:
+            raise ValueError("tracking.fist_ratio_threshold must be <= tracking.extended_ratio_threshold")
+        _require_positive_int("tracking.session_idle_timeout_ms", self.session_idle_timeout_ms)
 
 
 @dataclass
 class FilterSettings:
     type: str
     strength: float
+    deadzone: float
+    start_threshold: float
+    max_jump_distance: float
 
     def __post_init__(self) -> None:
         _require_non_empty_str("filter.type", self.type)
         _require_number_in_range("filter.strength", self.strength, minimum=0.0, maximum=1.0)
+        _require_number_in_range("filter.deadzone", self.deadzone, minimum=0.0, maximum=1000.0)
+        _require_number_in_range("filter.start_threshold", self.start_threshold, minimum=0.0, maximum=1000.0)
+        _require_number_in_range(
+            "filter.max_jump_distance",
+            self.max_jump_distance,
+            minimum=0.0,
+            maximum=5000.0,
+        )
 
 
 @dataclass
