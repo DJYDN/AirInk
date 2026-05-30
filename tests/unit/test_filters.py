@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+import pytest
+
 from airwrite.trajectory.filters import DeadzoneFilter, PassthroughFilter
 from airwrite.trajectory.stroke import StrokePoint
 
@@ -18,26 +22,32 @@ def test_passthrough_filter_reset_keeps_filter_ready_for_reuse() -> None:
     assert point_filter.update(point) == point
 
 
-def test_deadzone_filter_suppresses_micro_jitter() -> None:
-    point_filter = DeadzoneFilter(deadzone=3.0, smoothing=0.0)
+def test_deadzone_filter_smooths_small_motion() -> None:
+    point_filter = DeadzoneFilter(deadzone=3.0, smoothing=0.8)
 
     first = point_filter.update(StrokePoint(x=10.0, y=10.0, t=0.0, confidence=1.0))
     second = point_filter.update(StrokePoint(x=11.5, y=11.0, t=1.0, confidence=1.0))
 
     assert first == StrokePoint(x=10.0, y=10.0, t=0.0, confidence=1.0)
-    assert second is None
+    assert second is not None
+    assert second.x == pytest.approx(10.3)
+    assert second.y == pytest.approx(10.2)
 
 
-def test_deadzone_filter_emits_smoothed_point_after_large_move() -> None:
+def test_deadzone_filter_smooths_larger_motion_with_more_follow() -> None:
     point_filter = DeadzoneFilter(deadzone=3.0, smoothing=0.5, start_threshold=0.0)
 
     point_filter.update(StrokePoint(x=10.0, y=10.0, t=0.0, confidence=1.0))
     emitted = point_filter.update(StrokePoint(x=18.0, y=10.0, t=1.0, confidence=0.8))
 
-    assert emitted == StrokePoint(x=14.0, y=10.0, t=1.0, confidence=0.8)
+    assert emitted is not None
+    assert 14.0 < emitted.x < 18.0
+    assert emitted.y == 10.0
+    assert emitted.t == 1.0
+    assert emitted.confidence == 0.8
 
 
-def test_deadzone_filter_suppresses_pen_down_seed_until_motion_exceeds_start_threshold() -> None:
+def test_deadzone_filter_waits_for_start_threshold() -> None:
     point_filter = DeadzoneFilter(deadzone=2.0, smoothing=0.0, start_threshold=6.0)
 
     first = point_filter.update(StrokePoint(x=10.0, y=10.0, t=0.0, confidence=1.0))
@@ -49,7 +59,7 @@ def test_deadzone_filter_suppresses_pen_down_seed_until_motion_exceeds_start_thr
     assert third == StrokePoint(x=18.0, y=10.0, t=2.0, confidence=1.0)
 
 
-def test_deadzone_filter_ignores_large_tracking_jump() -> None:
+def test_deadzone_filter_uses_max_jump_distance() -> None:
     point_filter = DeadzoneFilter(
         deadzone=2.0,
         smoothing=0.0,
@@ -58,14 +68,14 @@ def test_deadzone_filter_ignores_large_tracking_jump() -> None:
     )
 
     point_filter.update(StrokePoint(x=10.0, y=10.0, t=0.0, confidence=1.0))
-    ignored = point_filter.update(StrokePoint(x=50.0, y=50.0, t=1.0, confidence=1.0))
-    resumed = point_filter.update(StrokePoint(x=18.0, y=12.0, t=2.0, confidence=1.0))
+    far_result = point_filter.update(StrokePoint(x=50.0, y=50.0, t=1.0, confidence=1.0))
+    near_result = point_filter.update(StrokePoint(x=18.0, y=12.0, t=2.0, confidence=1.0))
 
-    assert ignored is None
-    assert resumed == StrokePoint(x=18.0, y=12.0, t=2.0, confidence=1.0)
+    assert far_result is None
+    assert near_result == StrokePoint(x=18.0, y=12.0, t=2.0, confidence=1.0)
 
 
-def test_deadzone_filter_reports_whether_a_gap_can_resume_plausibly() -> None:
+def test_deadzone_filter_reports_gap_recovery() -> None:
     point_filter = DeadzoneFilter(
         deadzone=2.0,
         smoothing=0.0,
