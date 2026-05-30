@@ -1,5 +1,8 @@
+import { useEffect } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { useAirInkStore } from "../../stores/airinkStore";
+import { listen } from "@tauri-apps/api/event";
+import { useAirInkStore, type CameraStatus } from "../../stores/airinkStore";
+import type { AirInkFrame } from "../../types/frame";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard" },
@@ -13,6 +16,21 @@ const navItems = [
 export default function AppLayout() {
   const frame = useAirInkStore((state) => state.latestFrame);
   const status = useAirInkStore((state) => state.cameraStatus.status);
+
+  useEffect(() => {
+    const unlistenCamera = listen<CameraStatus>("airink/camera_status", (event) => {
+      useAirInkStore.getState().setCameraStatus(event.payload);
+    });
+
+    const unlistenFrame = listen<AirInkFrame>("airink/tracking_frame", (event) => {
+      useAirInkStore.getState().addFrame(event.payload);
+    });
+
+    return () => {
+      unlistenCamera.then((dispose) => dispose());
+      unlistenFrame.then((dispose) => dispose());
+    };
+  }, []);
 
   return (
     <div className="app-shell">
