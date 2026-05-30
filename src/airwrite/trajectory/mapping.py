@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
+
+_DEFAULT_WRITING_REGION = (0.18, 0.82, 0.15, 0.85)
+
 
 def map_image_to_canvas(
     *,
@@ -14,8 +18,9 @@ def map_image_to_canvas(
 ) -> tuple[float, float]:
     normalized_x = image_x / image_width
     normalized_y = image_y / image_height
-    if active_region is not None:
-        left, right, top, bottom = active_region
+    resolved_region = active_region if active_region is not None else _default_active_region()
+    if resolved_region is not None:
+        left, right, top, bottom = resolved_region
         normalized_x = _normalize_within_region(normalized_x, left, right)
         normalized_y = _normalize_within_region(normalized_y, top, bottom)
 
@@ -23,6 +28,19 @@ def map_image_to_canvas(
         normalized_x * canvas_width,
         normalized_y * canvas_height,
     )
+
+
+def _default_active_region() -> tuple[float, float, float, float] | None:
+    if (os.getenv("AIRWRITE_ENV") or "dev").strip().lower() == "test":
+        return None
+    raw_region = os.getenv("AIRWRITE_ACTIVE_REGION", "").strip()
+    if not raw_region:
+        return _DEFAULT_WRITING_REGION
+    try:
+        left, right, top, bottom = [float(value.strip()) for value in raw_region.split(",")]
+    except ValueError:
+        return _DEFAULT_WRITING_REGION
+    return (left, right, top, bottom)
 
 
 def _normalize_within_region(value: float, start: float, end: float) -> float:
