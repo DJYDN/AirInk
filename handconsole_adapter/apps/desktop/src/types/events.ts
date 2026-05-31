@@ -15,6 +15,12 @@ export interface SessionStatusEvent {
   stroke_count: number;
 }
 
+export interface SidecarErrorEvent {
+  kind: "parse_error" | "stdout_error" | "stderr" | string;
+  message: string;
+  line?: string;
+}
+
 export type RecognitionResultEvent = RecognitionResult;
 
 export type PlaybackFrameEvent = AirInkFrame;
