@@ -12,6 +12,7 @@ use frame::{
 };
 use session::SessionMeta;
 use sidecar::PythonSidecarBridge;
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Mutex, OnceLock};
 use tauri::{AppHandle, Emitter};
@@ -138,7 +139,27 @@ async fn airink_start_sidecar(
 ) -> Result<String, String> {
     let executable = executable.unwrap_or_else(|| "python".to_string());
     let args = args.unwrap_or_else(|| vec!["-m".to_string(), "airink_sidecar".to_string()]);
+    start_sidecar_with_status(app_handle, executable, args, "sidecar_session".to_string()).await
+}
 
+#[tauri::command]
+async fn airink_start_mock_sidecar(app_handle: AppHandle) -> Result<String, String> {
+    let script = resolve_mock_sidecar_path()?;
+    start_sidecar_with_status(
+        app_handle,
+        "python".to_string(),
+        vec![script.to_string_lossy().to_string()],
+        "mock_sidecar_session".to_string(),
+    )
+    .await
+}
+
+async fn start_sidecar_with_status(
+    app_handle: AppHandle,
+    executable: String,
+    args: Vec<String>,
+    session_id: String,
+) -> Result<String, String> {
     let message = sidecar::start_sidecar(app_handle.clone(), executable, args).await?;
     app_handle
         .emit("airink/camera_status", running_camera_status())
@@ -148,7 +169,7 @@ async fn airink_start_sidecar(
             "airink/session_status",
             SessionStatusEvent {
                 status: "recording".to_string(),
-                session_id: Some("sidecar_session".to_string()),
+                session_id: Some(session_id),
                 stroke_count: 0,
             },
         )
@@ -275,6 +296,7 @@ pub fn run() {
             airink_start_mock_stream,
             airink_stop_mock_stream,
             airink_start_sidecar,
+            airink_start_mock_sidecar,
             airink_stop_sidecar,
             airink_describe_sidecar,
             airink_list_sessions,
@@ -351,6 +373,33 @@ fn idle_camera_status() -> AirInkCameraStatus {
         fps: 0.0,
         error_message: None,
     }
+}
+
+fn resolve_mock_sidecar_path() -> Result<PathBuf, String> {
+    let cwd = std::env::current_dir().map_err(|e| e.to_string())?;
+    let candidates = vec![
+        cwd.join("python_sidecar_contract/mock_sidecar.py"),
+        cwd.join("../python_sidecar_contract/mock_sidecar.py"),
+        cwd.join("../../python_sidecar_contract/mock_sidecar.py"),
+        cwd.join("../../../python_sidecar_contract/mock_sidecar.py"),
+        cwd.join("handconsole_adapter/python_sidecar_contract/mock_sidecar.py"),
+    ];
+
+    for candidate in &candidates {
+        if candidate.exists() {
+            return Ok(candidate.clone());
+        }
+    }
+
+    let searched = candidates
+        .iter()
+        .map(|path| path.display().to_string())
+        .collect::<Vec<_>>()
+        .join("\n");
+    Err(format!(
+        "mock sidecar not found; current_dir={} searched:\n{}",
+        cwd.display(), searched
+    ))
 }
 
 fn now_ms() -> u64 {
