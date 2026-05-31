@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { listen } from "@tauri-apps/api/event";
 import { useAirInkStore, type CameraStatus } from "../../stores/airinkStore";
-import type { SessionStatusEvent, StrokeUpdateEvent } from "../../types/events";
+import type { SessionStatusEvent, SidecarErrorEvent, StrokeUpdateEvent } from "../../types/events";
 import type { AirInkFrame } from "../../types/frame";
 
 const navItems = [
@@ -18,6 +18,7 @@ export default function AppLayout() {
   const frame = useAirInkStore((state) => state.latestFrame);
   const status = useAirInkStore((state) => state.cameraStatus.status);
   const sessionStatus = useAirInkStore((state) => state.sessionStatus.status);
+  const sidecarErrorCount = useAirInkStore((state) => state.sidecarErrors.length);
 
   useEffect(() => {
     const unlistenCamera = listen<CameraStatus>("airink/camera_status", (event) => {
@@ -36,11 +37,16 @@ export default function AppLayout() {
       useAirInkStore.getState().setSessionStatus(event.payload);
     });
 
+    const unlistenSidecarError = listen<SidecarErrorEvent>("airink/sidecar_error", (event) => {
+      useAirInkStore.getState().addSidecarError(event.payload);
+    });
+
     return () => {
       unlistenCamera.then((dispose) => dispose());
       unlistenFrame.then((dispose) => dispose());
       unlistenStroke.then((dispose) => dispose());
       unlistenSession.then((dispose) => dispose());
+      unlistenSidecarError.then((dispose) => dispose());
     };
   }, []);
 
@@ -68,6 +74,7 @@ export default function AppLayout() {
           <span>Gesture: {frame?.gesture.state ?? "--"}</span>
           <span>Pinch: {frame?.tracking.pinch_ratio?.toFixed(2) ?? "--"}</span>
           <span>FPS: {frame?.camera.fps?.toFixed(1) ?? "--"}</span>
+          <span>Sidecar errors: {sidecarErrorCount}</span>
         </footer>
       </main>
     </div>
