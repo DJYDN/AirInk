@@ -4,7 +4,7 @@ import { useAirInkStore } from "../stores/airinkStore";
 
 export default function Settings() {
   const [executable, setExecutable] = useState("python");
-  const [args, setArgs] = useState("../../python_sidecar_contract/mock_sidecar.py");
+  const [args, setArgs] = useState("-m airink_sidecar");
   const [message, setMessage] = useState("");
   const cameraStatus = useAirInkStore((state) => state.cameraStatus.status);
   const sidecarErrors = useAirInkStore((state) => state.sidecarErrors);
@@ -28,6 +28,11 @@ export default function Settings() {
       executable,
       args: parsedArgs,
     });
+    setMessage(text);
+  };
+
+  const startMockSidecar = async () => {
+    const text = await invoke<string>("airink_start_mock_sidecar");
     setMessage(text);
   };
 
@@ -57,10 +62,13 @@ export default function Settings() {
             Arguments
             <input value={args} onChange={(event) => setArgs(event.target.value)} />
           </label>
-          <p className="muted">Arguments are split by spaces. The default points to the adapter mock sidecar.</p>
+          <p className="muted">
+            Use Start Mock Sidecar first. It resolves the adapter mock sidecar path on the Rust side.
+          </p>
           <div className="mock-controls left">
             <button className="btn" onClick={() => void describe()}>Describe</button>
-            <button className="btn primary" onClick={() => void startSidecar()}>Start Sidecar</button>
+            <button className="btn primary" onClick={() => void startMockSidecar()}>Start Mock Sidecar</button>
+            <button className="btn" onClick={() => void startSidecar()}>Start Custom Sidecar</button>
             <button className="btn" onClick={() => void stopSidecar()}>Stop Sidecar</button>
           </div>
           {message && <p className="muted">{message}</p>}
