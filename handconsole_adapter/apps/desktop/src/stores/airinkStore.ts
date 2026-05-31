@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { SessionStatusEvent, StrokeUpdateEvent } from "../types/events";
+import type { SessionStatusEvent, SidecarErrorEvent, StrokeUpdateEvent } from "../types/events";
 import type { AirInkFrame } from "../types/frame";
 import type { RecognitionResult } from "../types/recognition";
 import type { Stroke, StrokePoint } from "../types/stroke";
@@ -21,16 +21,20 @@ interface AirInkState {
   committedStrokes: Stroke[];
   activeStroke: Stroke | null;
   recognition: RecognitionResult | null;
+  sidecarErrors: SidecarErrorEvent[];
   setCameraStatus: (status: CameraStatus) => void;
   setSessionStatus: (status: SessionStatusEvent) => void;
   addFrame: (frame: AirInkFrame) => void;
   applyStrokeUpdate: (event: StrokeUpdateEvent) => void;
+  addSidecarError: (event: SidecarErrorEvent) => void;
+  clearSidecarErrors: () => void;
   setStrokes: (committed: Stroke[], active: Stroke | null) => void;
   setRecognition: (result: RecognitionResult | null) => void;
   clear: () => void;
 }
 
 const MAX_ACTIVE_POINTS = 2000;
+const MAX_SIDECAR_ERRORS = 50;
 
 export const useAirInkStore = create<AirInkState>((set, get) => ({
   cameraStatus: {
@@ -50,6 +54,7 @@ export const useAirInkStore = create<AirInkState>((set, get) => ({
   committedStrokes: [],
   activeStroke: null,
   recognition: null,
+  sidecarErrors: [],
   setCameraStatus: (cameraStatus) => set({ cameraStatus }),
   setSessionStatus: (sessionStatus) => set({ sessionStatus }),
   addFrame: (latestFrame) => {
@@ -98,6 +103,10 @@ export const useAirInkStore = create<AirInkState>((set, get) => ({
       stroke_count: event.stroke_count,
     },
   }),
+  addSidecarError: (event) => set((state) => ({
+    sidecarErrors: [event, ...state.sidecarErrors].slice(0, MAX_SIDECAR_ERRORS),
+  })),
+  clearSidecarErrors: () => set({ sidecarErrors: [] }),
   setStrokes: (committedStrokes, activeStroke) => set({ committedStrokes, activeStroke }),
   setRecognition: (recognition) => set({ recognition }),
   clear: () => set({
