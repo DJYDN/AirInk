@@ -197,6 +197,10 @@ select {
   justify-content: flex-end;
 }
 
+.mock-controls.left {
+  justify-content: flex-start;
+}
+
 .btn {
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 10px;
@@ -229,13 +233,34 @@ select {
   min-width: 84px;
 }
 
-.session-list {
+.status-pill {
+  color: #e5edf7;
+  border: 1px solid rgba(124, 196, 255, 0.45);
+  background: rgba(124, 196, 255, 0.12);
+  border-radius: 999px;
+  padding: 8px 12px;
+}
+
+.panel-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-notes {
+  margin-top: 16px;
+}
+
+.session-list,
+.error-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.session-row {
+.session-row,
+.error-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -246,12 +271,30 @@ select {
   cursor: pointer;
 }
 
+.error-row {
+  align-items: flex-start;
+  flex-direction: column;
+  cursor: default;
+  border-color: rgba(255, 92, 92, 0.24);
+}
+
+.error-row code {
+  width: 100%;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #ffb4b4;
+  background: rgba(255, 92, 92, 0.08);
+  border-radius: 8px;
+  padding: 8px;
+}
+
 .session-row.selected,
 .session-row:hover {
   background: rgba(124, 196, 255, 0.12);
 }
 
-.session-row small {
+.session-row small,
+.error-row small {
   display: block;
   margin-top: 4px;
   color: #9fb0c3;
